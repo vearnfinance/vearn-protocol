@@ -19,4 +19,6 @@ interface Strategy {
     function withdrawAll() external returns (uint);
 
     function balanceOf() external view returns (uint);
+
+    function skim() external;
 }
