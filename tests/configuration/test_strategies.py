@@ -3,10 +3,10 @@ import brownie
 
 
 from brownie import (
-    StrategyCreamYFI,
+    StrategyCreamVFI,
     StrategyCurveSBTC,
-    StrategyCurveYBUSD,
-    StrategyCurveYCRVVoter,
+    StrategyCurveVBUSD,
+    StrategyCurveVCRVVoter,
     StrategyDAICurve,
     StrategyDForceUSDC,
     StrategyDForceUSDT,
@@ -16,10 +16,10 @@ from brownie import (
 )
 
 STRATEGIES = [
-    StrategyCreamYFI,
+    StrategyCreamVFI,
     StrategyCurveSBTC,
-    StrategyCurveYBUSD,
-    StrategyCurveYCRVVoter,
+    StrategyCurveVBUSD,
+    StrategyCurveVCRVVoter,
     StrategyDAICurve,
     StrategyDForceUSDC,
     StrategyDForceUSDT,
