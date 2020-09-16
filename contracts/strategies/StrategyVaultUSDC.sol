@@ -10,8 +10,8 @@ import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
 import "../../interfaces/aave/Aave.sol";
 import "../../interfaces/aave/LendingPoolAddressesProvider.sol";
 
-import "../../interfaces/yearn/IController.sol";
-import "../../interfaces/yearn/Vault.sol";
+import "../../interfaces/vearn/EController.sol";
+import "../../interfaces/vearn/Vault.sol";
 
 contract StrategyVaultUSDC {
     using SafeERC20 for IERC20;
@@ -59,7 +59,7 @@ contract StrategyVaultUSDC {
     }
 
     function skimmable() public view returns (uint) {
-        (,uint currentBorrowBalance,,,,,,,,) = Aave(getAave()).getUserReserveData(want, IController(controller).vaults(address(this)));
+        (,uint currentBorrowBalance,,,,,,,,) = Aave(getAave()).getUserReserveData(want, EController(controller).vaults(address(this)));
         uint _have = have();
         if (_have > currentBorrowBalance) {
             return _have.sub(currentBorrowBalance);
@@ -95,7 +95,7 @@ contract StrategyVaultUSDC {
             _amount = _withdrawSome(_amount.sub(_balance));
             _amount = _amount.add(_balance);
         }
-        address _vault = IController(controller).vaults(address(this));
+        address _vault = EController(controller).vaults(address(this));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
         IERC20(want).safeTransfer(_vault, _amount);
     }
