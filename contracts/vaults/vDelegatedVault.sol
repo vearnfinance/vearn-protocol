@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "@openzeppelinV2/contracts/token/ERC20/EERC20.sol";
+import "@openzeppelinV2/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelinV2/contracts/math/SafeMath.sol";
 import "@openzeppelinV2/contracts/utils/Address.sol";
 import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
@@ -15,11 +15,11 @@ import "../../interfaces/aave/LendingPoolAddressesProvider.sol";
 import "../../interfaces/vearn/EController.sol";
 
 contract vDelegatedVault is ERC20, ERC20Detailed {
-    using SafeERC20 for EERC20;
+    using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
     
-    EERC20 public token;
+    IERC20 public token;
     
     address public governance;
     address public controller;
@@ -36,7 +36,7 @@ contract vDelegatedVault is ERC20, ERC20Detailed {
         string(abi.encodePacked("v", ERC20Detailed(_token).symbol())),
         ERC20Detailed(_token).decimals()
     ) {
-        token = EERC20(_token);
+        token = IERC20(_token);
         governance = msg.sender;
         controller = _controller;
     }
@@ -80,14 +80,14 @@ contract vDelegatedVault is ERC20, ERC20Detailed {
     
     function repay(address reserve, uint amount) public  {
         // Required for certain stable coins (USDT for example)
-        EERC20(reserve).approve(address(getAaveCore()), 0);
-        EERC20(reserve).approve(address(getAaveCore()), amount);
+        IERC20(reserve).approve(address(getAaveCore()), 0);
+        IERC20(reserve).approve(address(getAaveCore()), amount);
         Aave(getAave()).repay(reserve, amount, address(uint160(address(this))));
     }
     
     function repayAll() public {
         address _reserve = reserve();
-        uint _amount = EERC20(_reserve).balanceOf(address(this));
+        uint _amount = IERC20(_reserve).balanceOf(address(this));
         repay(_reserve, _amount);
     }
     
@@ -95,7 +95,7 @@ contract vDelegatedVault is ERC20, ERC20Detailed {
     function harvest(address reserve, uint amount) external {
         require(msg.sender == controller, "!controller");
         require(reserve != address(token), "token");
-        EERC20(reserve).safeTransfer(controller, amount);
+        IERC20(reserve).safeTransfer(controller, amount);
     }
     
     // Ignore insurance fund for balance calculations
@@ -221,9 +221,9 @@ contract vDelegatedVault is ERC20, ERC20Detailed {
             Aave(getAave()).borrow(_reserve, _borrow, 2, 7);
         }
         //rebalance here
-        uint _balance = EERC20(_reserve).balanceOf(address(this));
+        uint _balance = IERC20(_reserve).balanceOf(address(this));
         if (_balance > 0) {
-            EERC20(_reserve).safeTransfer(controller, _balance);
+            IERC20(_reserve).safeTransfer(controller, _balance);
             EController(controller).earn(address(this), _balance);
         }
     }
