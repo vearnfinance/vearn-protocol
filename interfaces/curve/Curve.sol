@@ -2,7 +2,7 @@
 
 pragma solidity ^0.5.17;
 
-interface ICurveFi {
+interface ECurveFi {
 
   function get_virtual_price() external view returns (uint);
   function add_liquidity( // sBTC pool
