@@ -11,11 +11,11 @@ import "../../interfaces/curve/Curve.sol";
 import "../../interfaces/curve/Gauge.sol";
 import "../../interfaces/uniswap/Uni.sol";
 
-import "../../interfaces/yearn/IController.sol";
-import "../../interfaces/yearn/Mintr.sol";
-import "../../interfaces/yearn/Token.sol";
+import "../../interfaces/vearn/EController.sol";
+import "../../interfaces/vearn/Mintr.sol";
+import "../../interfaces/vearn/Token.sol";
 
-contract StrategyCurveYCRVVoter {
+contract StrategyCurveVCRVVoter {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -28,7 +28,7 @@ contract StrategyCurveYCRVVoter {
     address constant public weth = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // used for crv <> weth <> dai route
     
     address constant public dai = address(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-    address constant public ydai = address(0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01);
+    address constant public vdai = address(0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01);
     address constant public curve = address(0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51);
     
     uint public keepCRV = 1000;
@@ -51,7 +51,7 @@ contract StrategyCurveYCRVVoter {
     }
     
     function getName() external pure returns (string memory) {
-        return "StrategyCurveYCRVVoter";
+        return "StrategyCurveVCRVVoter";
     }
     
     function setStrategist(address _strategist) external {
@@ -89,7 +89,7 @@ contract StrategyCurveYCRVVoter {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
         require(crv != address(_asset), "crv");
-        require(ydai != address(_asset), "ydai");
+        require(vdai != address(_asset), "vdai");
         require(dai != address(_asset), "dai");
         balance = _asset.balanceOf(address(this));
         _asset.safeTransfer(controller, balance);
@@ -106,8 +106,8 @@ contract StrategyCurveYCRVVoter {
         
         uint _fee = _amount.mul(withdrawalFee).div(withdrawalMax);
         
-        IERC20(want).safeTransfer(IController(controller).rewards(), _fee);
-        address _vault = IController(controller).vaults(address(want));
+        IERC20(want).safeTransfer(EController(controller).rewards(), _fee);
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
         
         IERC20(want).safeTransfer(_vault, _amount.sub(_fee));
@@ -137,7 +137,7 @@ contract StrategyCurveYCRVVoter {
         if (_crv > 0) {
             
             uint _keepCRV = _crv.mul(keepCRV).div(keepCRVMax);
-            IERC20(crv).safeTransfer(IController(controller).rewards(), _keepCRV);
+            IERC20(crv).safeTransfer(EController(controller).rewards(), _keepCRV);
             _crv = _crv.sub(_keepCRV);
             
             
@@ -153,20 +153,20 @@ contract StrategyCurveYCRVVoter {
         }
         uint _dai = IERC20(dai).balanceOf(address(this));
         if (_dai > 0) {
-            IERC20(dai).safeApprove(ydai, 0);
-            IERC20(dai).safeApprove(ydai, _dai);
-            yERC20(ydai).deposit(_dai);
+            IERC20(dai).safeApprove(vdai, 0);
+            IERC20(dai).safeApprove(vdai, _dai);
+            vERC20(vdai).deposit(_dai);
         }
-        uint _ydai = IERC20(ydai).balanceOf(address(this));
-        if (_ydai > 0) {
-            IERC20(ydai).safeApprove(curve, 0);
-            IERC20(ydai).safeApprove(curve, _ydai);
-            ICurveFi(curve).add_liquidity([_ydai,0,0,0],0);
+        uint _vdai = IERC20(vdai).balanceOf(address(this));
+        if (_vdai > 0) {
+            IERC20(vdai).safeApprove(curve, 0);
+            IERC20(vdai).safeApprove(curve, _vdai);
+            ICurveFi(curve).add_liquidity([_vdai,0,0,0],0);
         }
         uint _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             uint _fee = _want.mul(performanceFee).div(performanceMax);
-            IERC20(want).safeTransfer(IController(controller).rewards(), _fee);
+            IERC20(want).safeTransfer(EController(controller).rewards(), _fee);
             deposit();
         }
     }
