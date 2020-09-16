@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "@openzeppelinV2/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelinV2/contracts/token/ERC20/EERC20.sol";
 import "@openzeppelinV2/contracts/math/SafeMath.sol";
 import "@openzeppelinV2/contracts/utils/Address.sol";
 import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
@@ -12,14 +12,14 @@ import "../../interfaces/aave/Aave.sol";
 import "../../interfaces/aave/AaveToken.sol";
 import "../../interfaces/aave/Oracle.sol";
 import "../../interfaces/aave/LendingPoolAddressesProvider.sol";
-import "../../interfaces/yearn/IController.sol";
+import "../../interfaces/vearn/EController.sol";
 
-contract yDelegatedVault is ERC20, ERC20Detailed {
-    using SafeERC20 for IERC20;
+contract vDelegatedVault is ERC20, ERC20Detailed {
+    using SafeERC20 for EERC20;
     using Address for address;
     using SafeMath for uint256;
     
-    IERC20 public token;
+    EERC20 public token;
     
     address public governance;
     address public controller;
@@ -32,23 +32,23 @@ contract yDelegatedVault is ERC20, ERC20Detailed {
     address public constant aave = address(0x24a42fD28C976A61Df5D00D0599C34c4f90748c8);
     
     constructor (address _token, address _controller) public ERC20Detailed(
-        string(abi.encodePacked("yearn ", ERC20Detailed(_token).name())),
-        string(abi.encodePacked("y", ERC20Detailed(_token).symbol())),
+        string(abi.encodePacked("vearn ", ERC20Detailed(_token).name())),
+        string(abi.encodePacked("v", ERC20Detailed(_token).symbol())),
         ERC20Detailed(_token).decimals()
     ) {
-        token = IERC20(_token);
+        token = EERC20(_token);
         governance = msg.sender;
         controller = _controller;
     }
     
     function debt() public view returns (uint) {
-        address _reserve = IController(controller).want(address(this));
+        address _reserve = EController(controller).want(address(this));
         (,uint currentBorrowBalance,,,,,,,,) = Aave(getAave()).getUserReserveData(_reserve, address(this));
         return currentBorrowBalance;
     }
     
     function credit() public view returns (uint) {
-        return IController(controller).balanceOf(address(this));
+        return EController(controller).balanceOf(address(this));
     }
     
     // % of tokens locked and cannot be withdrawn per user
@@ -80,14 +80,14 @@ contract yDelegatedVault is ERC20, ERC20Detailed {
     
     function repay(address reserve, uint amount) public  {
         // Required for certain stable coins (USDT for example)
-        IERC20(reserve).approve(address(getAaveCore()), 0);
-        IERC20(reserve).approve(address(getAaveCore()), amount);
+        EERC20(reserve).approve(address(getAaveCore()), 0);
+        EERC20(reserve).approve(address(getAaveCore()), amount);
         Aave(getAave()).repay(reserve, amount, address(uint160(address(this))));
     }
     
     function repayAll() public {
         address _reserve = reserve();
-        uint _amount = IERC20(_reserve).balanceOf(address(this));
+        uint _amount = EERC20(_reserve).balanceOf(address(this));
         repay(_reserve, _amount);
     }
     
@@ -95,7 +95,7 @@ contract yDelegatedVault is ERC20, ERC20Detailed {
     function harvest(address reserve, uint amount) external {
         require(msg.sender == controller, "!controller");
         require(reserve != address(token), "token");
-        IERC20(reserve).safeTransfer(controller, amount);
+        EERC20(reserve).safeTransfer(controller, amount);
     }
     
     // Ignore insurance fund for balance calculations
@@ -160,7 +160,7 @@ contract yDelegatedVault is ERC20, ERC20Detailed {
                 _over = credit();
             }
             if (_over > 0) {
-                IController(controller).withdraw(address(this), _over);
+                EController(controller).withdraw(address(this), _over);
                 repayAll();
             }
         }
@@ -221,10 +221,10 @@ contract yDelegatedVault is ERC20, ERC20Detailed {
             Aave(getAave()).borrow(_reserve, _borrow, 2, 7);
         }
         //rebalance here
-        uint _balance = IERC20(_reserve).balanceOf(address(this));
+        uint _balance = EERC20(_reserve).balanceOf(address(this));
         if (_balance > 0) {
-            IERC20(_reserve).safeTransfer(controller, _balance);
-            IController(controller).earn(address(this), _balance);
+            EERC20(_reserve).safeTransfer(controller, _balance);
+            EController(controller).earn(address(this), _balance);
         }
     }
     
@@ -255,7 +255,7 @@ contract yDelegatedVault is ERC20, ERC20Detailed {
     }
     
     function reserve() public view returns (address) {
-        return IController(controller).want(address(this));
+        return EController(controller).want(address(this));
     }
     
     function underlying() public view returns (address) {
