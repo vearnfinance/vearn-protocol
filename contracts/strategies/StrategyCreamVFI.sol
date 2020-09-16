@@ -11,9 +11,9 @@ import "../../interfaces/cream/Controller.sol";
 import "../../interfaces/compound/Token.sol";
 import "../../interfaces/uniswap/Uni.sol";
 
-import "../../interfaces/yearn/IController.sol";
+import "../../interfaces/vearn/EController.sol";
 
-contract StrategyCreamYFI {
+contract StrategyCreamVFI {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -22,11 +22,11 @@ contract StrategyCreamYFI {
 
     Creamtroller public constant creamtroller = Creamtroller(0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258);
 
-    address constant public crYFI = address(0xCbaE0A83f4f9926997c8339545fb8eE32eDc6b76);
+    address constant public crVFI = address(0xCbaE0A83f4f9926997c8339545fb8eE32eDc6b76);
     address constant public cream = address(0x2ba592F78dB6436527729929AAf6c908497cB200);
 
     address constant public uni = address(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-    address constant public weth = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // used for cream <> weth <> yfi route
+    address constant public weth = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2); // used for cream <> weth <> vfi route
 
     uint public performanceFee = 500;
     uint constant public performanceMax = 10000;
@@ -45,7 +45,7 @@ contract StrategyCreamYFI {
     }
 
     function getName() external pure returns (string memory) {
-        return "StrategyCreamYFI";
+        return "StrategyCreamVFI";
     }
 
     function setStrategist(address _strategist) external {
@@ -66,9 +66,9 @@ contract StrategyCreamYFI {
     function deposit() public {
         uint _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
-            IERC20(want).safeApprove(crYFI, 0);
-            IERC20(want).safeApprove(crYFI, _want);
-            cToken(crYFI).mint(_want);
+            IERC20(want).safeApprove(crVFI, 0);
+            IERC20(want).safeApprove(crVFI, _want);
+            cToken(crVFI).mint(_want);
         }
     }
 
@@ -76,7 +76,7 @@ contract StrategyCreamYFI {
     function withdraw(IERC20 _asset) external returns (uint balance) {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
-        require(crYFI != address(_asset), "crYFI");
+        require(crVFI != address(_asset), "crVFI");
         require(cream != address(_asset), "cream");
         balance = _asset.balanceOf(address(this));
         _asset.safeTransfer(controller, balance);
@@ -95,7 +95,7 @@ contract StrategyCreamYFI {
         uint _fee = _amount.mul(withdrawalFee).div(withdrawalMax);
 
         IERC20(want).safeTransfer(IController(controller).rewards(), _fee);
-        address _vault = IController(controller).vaults(address(want));
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
 
         IERC20(want).safeTransfer(_vault, _amount.sub(_fee));
@@ -112,7 +112,7 @@ contract StrategyCreamYFI {
         balance = IERC20(want).balanceOf(address(this));
 
 
-        address _vault = IController(controller).vaults(address(want));
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
         IERC20(want).safeTransfer(_vault, balance);
 
@@ -166,20 +166,20 @@ contract StrategyCreamYFI {
     }
 
     function _withdrawC(uint amount) internal {
-        cToken(crYFI).redeem(amount);
+        cToken(crVFI).redeem(amount);
     }
 
     function balanceCInToken() public view returns (uint256) {
         // Mantisa 1e18 to decimals
         uint256 b = balanceC();
         if (b > 0) {
-            b = b.mul(cToken(crYFI).exchangeRateStored()).div(1e18);
+            b = b.mul(cToken(crVFI).exchangeRateStored()).div(1e18);
         }
         return b;
     }
 
     function balanceC() public view returns (uint256) {
-        return IERC20(crYFI).balanceOf(address(this));
+        return IERC20(crVFI).balanceOf(address(this));
     }
 
     function balanceOf() public view returns (uint) {
