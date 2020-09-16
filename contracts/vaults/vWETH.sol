@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "@openzeppelinV2/contracts/token/ERC20/EERC20.sol";
+import "@openzeppelinV2/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelinV2/contracts/math/SafeMath.sol";
 import "@openzeppelinV2/contracts/utils/Address.sol";
 import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
@@ -13,7 +13,7 @@ import "../../interfaces/vearn/EController.sol";
 
 // NOTE: The name of this contract was modified from vVault so as not to conflict with vVault.sol
 contract vWETH is ERC20, ERC20Detailed {
-    using SafeERC20 for EERC20;
+    using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
@@ -30,7 +30,7 @@ contract vWETH is ERC20, ERC20Detailed {
         string(abi.encodePacked("v", ERC20Detailed(_token).symbol())),
         ERC20Detailed(_token).decimals()
     ) {
-        token = EERC20(_token);
+        token = IERC20(_token);
         governance = msg.sender;
         controller = _controller;
     }
