@@ -11,9 +11,9 @@ import "../../interfaces/curve/Curve.sol";
 import "../../interfaces/curve/Gauge.sol";
 import "../../interfaces/uniswap/Uni.sol";
 
-import "../../interfaces/yearn/IController.sol";
-import "../../interfaces/yearn/Mintr.sol";
-import "../../interfaces/yearn/Token.sol";
+import "../../interfaces/vearn/EController.sol";
+import "../../interfaces/vearn/Mintr.sol";
+import "../../interfaces/vearn/Token.sol";
 
 contract StrategyCurveSBTC {
     using SafeERC20 for IERC20;
@@ -103,8 +103,8 @@ contract StrategyCurveSBTC {
         
         uint _fee = _amount.mul(withdrawalFee).div(withdrawalMax);
         
-        IERC20(want).safeTransfer(IController(controller).rewards(), _fee);
-        address _vault = IController(controller).vaults(address(want));
+        IERC20(want).safeTransfer(EController(controller).rewards(), _fee);
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
         
         IERC20(want).safeTransfer(_vault, _amount.sub(_fee));
@@ -118,7 +118,7 @@ contract StrategyCurveSBTC {
         
         balance = IERC20(want).balanceOf(address(this));
         
-        address _vault = IController(controller).vaults(address(want));
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
         IERC20(want).safeTransfer(_vault, balance);
     }
@@ -133,7 +133,7 @@ contract StrategyCurveSBTC {
         uint _crv = IERC20(crv).balanceOf(address(this));
         
         uint _keepCRV = _crv.mul(keepCRV).div(keepCRVMax);
-        IERC20(crv).safeTransfer(IController(controller).rewards(), _keepCRV);
+        IERC20(crv).safeTransfer(EController(controller).rewards(), _keepCRV);
         _crv = _crv.sub(_keepCRV);
         
         if (_crv > 0) {
@@ -156,7 +156,7 @@ contract StrategyCurveSBTC {
         uint _want = IERC20(want).balanceOf(address(this));
         if (_want > 0) {
             uint _fee = _want.mul(performanceFee).div(performanceMax);
-            IERC20(want).safeTransfer(IController(controller).rewards(), _fee);
+            IERC20(want).safeTransfer(EController(controller).rewards(), _fee);
             deposit();
         }
     }
