@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "@openzeppelinV2/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelinV2/contracts/token/ERC20/EERC20.sol";
 import "@openzeppelinV2/contracts/math/SafeMath.sol";
 import "@openzeppelinV2/contracts/utils/Address.sol";
 import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
@@ -8,14 +8,14 @@ import "@openzeppelinV2/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelinV2/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelinV2/contracts/ownership/Ownable.sol";
 
-import "../../interfaces/yearn/IController.sol";
+import "../../interfaces/yearn/EController.sol";
 
-contract yVault is ERC20, ERC20Detailed {
-    using SafeERC20 for IERC20;
+contract vVault is ERC20, ERC20Detailed {
+    using SafeERC20 for EERC20;
     using Address for address;
     using SafeMath for uint256;
 
-    IERC20 public token;
+    EERC20 public token;
 
     uint public min = 9500;
     uint public constant max = 10000;
@@ -24,18 +24,18 @@ contract yVault is ERC20, ERC20Detailed {
     address public controller;
 
     constructor (address _token, address _controller) public ERC20Detailed(
-        string(abi.encodePacked("yearn ", ERC20Detailed(_token).name())),
-        string(abi.encodePacked("y", ERC20Detailed(_token).symbol())),
+        string(abi.encodePacked("vearn ", ERC20Detailed(_token).name())),
+        string(abi.encodePacked("v", ERC20Detailed(_token).symbol())),
         ERC20Detailed(_token).decimals()
     ) {
-        token = IERC20(_token);
+        token = EERC20(_token);
         governance = msg.sender;
         controller = _controller;
     }
 
     function balance() public view returns (uint) {
         return token.balanceOf(address(this))
-                .add(IController(controller).balanceOf(address(token)));
+                .add(EController(controller).balanceOf(address(token)));
     }
 
     function setMin(uint _min) external {
@@ -62,7 +62,7 @@ contract yVault is ERC20, ERC20Detailed {
     function earn() public {
         uint _bal = available();
         token.safeTransfer(controller, _bal);
-        IController(controller).earn(address(token), _bal);
+        EController(controller).earn(address(token), _bal);
     }
 
     function depositAll() external {
@@ -93,7 +93,7 @@ contract yVault is ERC20, ERC20Detailed {
     function harvest(address reserve, uint amount) external {
         require(msg.sender == controller, "!controller");
         require(reserve != address(token), "token");
-        IERC20(reserve).safeTransfer(controller, amount);
+        EERC20(reserve).safeTransfer(controller, amount);
     }
 
     // No rebalance implementation for lower fees and faster swaps
@@ -105,7 +105,7 @@ contract yVault is ERC20, ERC20Detailed {
         uint b = token.balanceOf(address(this));
         if (b < r) {
             uint _withdraw = r.sub(b);
-            IController(controller).withdraw(address(token), _withdraw);
+            EController(controller).withdraw(address(token), _withdraw);
             uint _after = token.balanceOf(address(this));
             uint _diff = _after.sub(b);
             if (_diff < _withdraw) {
