@@ -7,9 +7,9 @@ import "@openzeppelinV2/contracts/math/SafeMath.sol";
 import "@openzeppelinV2/contracts/utils/Address.sol";
 import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
 
-import "../../interfaces/yearn/Converter.sol";
-import "../../interfaces/yearn/OneSplitAudit.sol";
-import "../../interfaces/yearn/Strategy.sol";
+import "../../interfaces/vearn/Converter.sol";
+import "../../interfaces/vearn/OneSplitAudit.sol";
+import "../../interfaces/vearn/Strategy.sol";
 
 contract Controller {
     using SafeERC20 for IERC20;
