@@ -8,9 +8,9 @@ import "@openzeppelinV2/contracts/token/ERC20/SafeERC20.sol";
 import "../../interfaces/maker/Maker.sol";
 import "../../interfaces/uniswap/Uni.sol";
 
-import "../../interfaces/yearn/IController.sol";
-import "../../interfaces/yearn/Strategy.sol";
-import "../../interfaces/yearn/Vault.sol";
+import "../../interfaces/vearn/EController.sol";
+import "../../interfaces/vearn/Strategy.sol";
+import "../../interfaces/vearn/Vault.sol";
 
 contract StrategyMKRVaultDAIDelegate {
     using SafeERC20 for IERC20;
@@ -30,7 +30,7 @@ contract StrategyMKRVaultDAIDelegate {
     address public jug = address(0x19c0976f590D67707E62397C87829d896Dc0f1F1);
 
     address public eth_price_oracle = address(0xCF63089A8aD2a9D8BD6Bb8022f3190EB7e1eD0f1);
-    address constant public yVaultDAI = address(0xACd43E627e64355f1861cEC6d3a6688B31a6F952);
+    address constant public vVaultDAI = address(0xACd43E627e64355f1861cEC6d3a6688B31a6F952);
 
     address constant public unirouter = address(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
 
@@ -129,7 +129,7 @@ contract StrategyMKRVaultDAIDelegate {
     function _approveAll() internal {
         IERC20(token).approve(mcd_join_eth_a, uint(-1));
         IERC20(dai).approve(mcd_join_dai, uint(-1));
-        IERC20(dai).approve(yVaultDAI, uint(-1));
+        IERC20(dai).approve(vVaultDAI, uint(-1));
         IERC20(dai).approve(unirouter, uint(-1));
     }
 
@@ -142,8 +142,8 @@ contract StrategyMKRVaultDAIDelegate {
             require(_checkDebtCeiling(_draw), "debt ceiling is reached!");
             _lockWETHAndDrawDAI(_token, _draw);
         }
-        // approve yVaultDAI use DAI
-        Vault(yVaultDAI).depositAll();
+        // approve vVaultDAI use DAI
+        Vault(vVaultDAI).depositAll();
     }
 
     function _getPrice() internal view returns (uint p) {
@@ -183,9 +183,9 @@ contract StrategyMKRVaultDAIDelegate {
         }
     }
 
-    function toInt(uint x) internal pure returns (int y) {
-        y = int(x);
-        require(y >= 0, "int-overflow");
+    function toInt(uint x) internal pure returns (int v) {
+        v = int(x);
+        require(v >= 0, "int-overflow");
     }
 
     // Controller only function for creating additional rewards from dust
@@ -193,7 +193,7 @@ contract StrategyMKRVaultDAIDelegate {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
         require(dai != address(_asset), "dai");
-        require(yVaultDAI != address(_asset), "ydai");
+        require(vVaultDAI != address(_asset), "vdai");
         balance = _asset.balanceOf(address(this));
         _asset.safeTransfer(controller, balance);
     }
@@ -209,8 +209,8 @@ contract StrategyMKRVaultDAIDelegate {
 
         uint _fee = _amount.mul(withdrawalFee).div(withdrawalMax);
 
-        IERC20(want).safeTransfer(IController(controller).rewards(), _fee);
-        address _vault = IController(controller).vaults(address(want));
+        IERC20(want).safeTransfer(EController(controller).rewards(), _fee);
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
 
         IERC20(want).safeTransfer(_vault, _amount.sub(_fee));
@@ -261,13 +261,13 @@ contract StrategyMKRVaultDAIDelegate {
         _swap(IERC20(dai).balanceOf(address(this)));
         balance = IERC20(want).balanceOf(address(this));
 
-        address _vault = IController(controller).vaults(address(want));
+        address _vault = EController(controller).vaults(address(want));
         require(_vault != address(0), "!vault"); // additional protection so we don't burn the funds
         IERC20(want).safeTransfer(_vault, balance);
     }
 
     function _withdrawAll() internal {
-        Vault(yVaultDAI).withdrawAll(); // get Dai
+        Vault(vVaultDAI).withdrawAll(); // get Dai
         _wipe(getTotalDebtAmount().add(1)); // in case of edge case
         _freeWETH(balanceOfmVault());
     }
@@ -291,10 +291,10 @@ contract StrategyMKRVaultDAIDelegate {
     function harvest() public {
         require(msg.sender == strategist || msg.sender == harvester || msg.sender == governance, "!authorized");
 
-        uint v = getUnderlyingDai();
+        uint y = getUnderlyingDai();
         uint d = getTotalDebtAmount();
-        require(v > d, "profit is not realized yet!");
-        uint profit = v.sub(d);
+        require(y > d, "profit is not realized yet!");
+        uint profit = y.sub(d);
 
 
         uint _before = IERC20(want).balanceOf(address(this));
@@ -306,7 +306,7 @@ contract StrategyMKRVaultDAIDelegate {
             uint _fee = _want.mul(performanceFee).div(performanceMax);
             uint _strategistReward = _fee.mul(strategistReward).div(strategistRewardMax);
             IERC20(want).safeTransfer(strategist, _strategistReward);
-            IERC20(want).safeTransfer(IController(controller).rewards(), _fee.sub(_strategistReward));
+            IERC20(want).safeTransfer(EController(controller).rewards(), _fee.sub(_strategistReward));
         }
 
         deposit();
@@ -340,7 +340,7 @@ contract StrategyMKRVaultDAIDelegate {
         uint _drawD = drawAmount();
         if (_drawD > 0) {
             _lockWETHAndDrawDAI(0, _drawD);
-            Vault(yVaultDAI).depositAll();
+            Vault(vVaultDAI).depositAll();
         }
     }
 
@@ -409,22 +409,22 @@ contract StrategyMKRVaultDAIDelegate {
     }
 
     function getUnderlyingDai() public view returns (uint) {
-        return IERC20(yVaultDAI).balanceOf(address(this))
-                .mul(Vault(yVaultDAI).getPricePerFullShare())
+        return IERC20(vVaultDAI).balanceOf(address(this))
+                .mul(Vault(vVaultDAI).getPricePerFullShare())
                 .div(1e18);
     }
 
     function _withdrawDaiMost(uint _amount) internal returns (uint) {
         uint _shares = _amount
                         .mul(1e18)
-                        .div(Vault(yVaultDAI).getPricePerFullShare());
+                        .div(Vault(vVaultDAI).getPricePerFullShare());
 
-        if (_shares > IERC20(yVaultDAI).balanceOf(address(this))) {
-            _shares = IERC20(yVaultDAI).balanceOf(address(this));
+        if (_shares > IERC20(vVaultDAI).balanceOf(address(this))) {
+            _shares = IERC20(vVaultDAI).balanceOf(address(this));
         }
 
         uint _before = IERC20(dai).balanceOf(address(this));
-        Vault(yVaultDAI).withdraw(_shares);
+        Vault(vVaultDAI).withdraw(_shares);
         uint _after = IERC20(dai).balanceOf(address(this));
         return _after.sub(_before);
     }
@@ -432,16 +432,16 @@ contract StrategyMKRVaultDAIDelegate {
     function _withdrawDaiLeast(uint _amount) internal returns (uint) {
         uint _shares = _amount
                         .mul(1e18)
-                        .div(Vault(yVaultDAI).getPricePerFullShare())
+                        .div(Vault(vVaultDAI).getPricePerFullShare())
                         .mul(withdrawalMax)
                         .div(withdrawalMax.sub(withdrawalFee));
 
-        if (_shares > IERC20(yVaultDAI).balanceOf(address(this))) {
-            _shares = IERC20(yVaultDAI).balanceOf(address(this));
+        if (_shares > IERC20(vVaultDAI).balanceOf(address(this))) {
+            _shares = IERC20(vVaultDAI).balanceOf(address(this));
         }
 
         uint _before = IERC20(dai).balanceOf(address(this));
-        Vault(yVaultDAI).withdraw(_shares);
+        Vault(vVaultDAI).withdraw(_shares);
         uint _after = IERC20(dai).balanceOf(address(this));
         return _after.sub(_before);
     }
